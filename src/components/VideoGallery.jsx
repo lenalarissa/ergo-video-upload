@@ -4,6 +4,7 @@ import copyIcon from "@/assets/kopieren-und-einfugen.svg";
 import downloadIcon from "@/assets/datei-download.svg";
 import { useEffect, useRef, useState } from "react";
 import QRCode from "react-qr-code";
+import handleDownloadQRCode from "@/utils/HandleDownloadQRCode.js";
 
 export default function VideoGallery({ createMailLink }) {
   const [videos, setVideos] = useState([]);
@@ -13,14 +14,35 @@ export default function VideoGallery({ createMailLink }) {
 
   const [page, setPage] = useState(1);
   const [totalVideos, setTotalVideos] = useState(0);
+  const [notice, setNotice] = useState(null);
+
+  const [sortBy, setSortBy] = useState("created");
+  const [sortOrder, setSortOrder] = useState("dsc");
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
   const pageSize = 50;
+
+  function showNotice(message) {
+    setNotice(message);
+
+    setTimeout(() => {
+      setNotice("");
+    }, 2500);
+  }
 
   useEffect(() => {
     const offset = (page - 1) * pageSize;
+
+    const query = search ? `&search=${encodeURIComponent(search)}` : "";
+
     async function fetchVideos() {
       try {
+        // als default wenn weder sort noch order übergeben werden: sort=created und order=dsc
+        //falls sort gesetzt ist aber order fehlt: asc als default
+        //falls order gesetzt aber sort fehlt: created als default
+
         const response = await fetch(
-          `https://ergopro-ecloud.equeo.de/rest/v1/videos?tags=ergo,ergo%20pro&limit=50&offset=${offset}`,
+          `https://ergopro-ecloud.equeo.de/rest/v1/videos?tags=ergo,ergo%20pro&limit=50&offset=${offset}&sort=${sortBy}&order=${sortOrder}${query}`,
           {
             headers: {
               Authorization: "Bearer " + localStorage.getItem("access_token"),
@@ -45,7 +67,7 @@ export default function VideoGallery({ createMailLink }) {
     }
 
     fetchVideos();
-  }, [page]);
+  }, [page, sortBy, sortOrder, search]);
 
   const qrCodeRefs = useRef({});
 
@@ -54,6 +76,12 @@ export default function VideoGallery({ createMailLink }) {
 
     try {
       const link = await createMailLink(videoId);
+
+      if (!link || link === "") {
+        showNotice(
+          "Die Mail-Link-Generierung ist noch nicht abgeschlossen. Bitte versuchen Sie es in einigen Minuten erneut.",
+        );
+      }
 
       setMailLinks((prev) => ({
         ...prev,
@@ -76,30 +104,17 @@ export default function VideoGallery({ createMailLink }) {
     if (!link) {
       link = await createMailLink(videoId);
     }
+    if (!link || link === "") {
+      showNotice(
+        "Die Mail-Link-Generierung ist noch nicht abgeschlossen. Bitte versuchen Sie es in einigen Minuten erneut.",
+      );
+    }
+
     if (!link || link === "-") return;
     setQrCodeLinks((prev) => ({
       ...prev,
       [videoId]: link,
     }));
-  }
-
-  function handleDownloadQRCode(videoId) {
-    const container = qrCodeRefs.current[videoId];
-    const svgElement = container?.querySelector("svg");
-    if (!svgElement) return;
-
-    const serializer = new XMLSerializer();
-    const svgText = serializer.serializeToString(svgElement);
-    const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `qrcode-${videoId}.svg`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   }
 
   function convertDuration(totalMinutes) {
@@ -165,173 +180,233 @@ export default function VideoGallery({ createMailLink }) {
     }
   }
 
+  function sortTable(column) {
+    if (sortBy === column) {
+      setSortOrder((prev) => (prev === "asc" ? "dsc" : "asc"));
+    } else {
+      setSortBy(column);
+      setSortOrder("asc");
+    }
+
+    setPage(1);
+  }
+
+  function getSortIndicator(column) {
+    if (sortBy === column) {
+      return sortOrder === "asc" ? " ↑" : " ↓";
+    }
+  }
+
   return (
     <div className="flex flex-col h-full">
+      {notice && (
+        <div className="fixed bottom-4 right-4 z-50 max-w-sm rounded border border-black bg-white px-4 py-3 shadow-lg text-sm">
+          {notice}
+        </div>
+      )}
       <div className="flex flex-1">
         <div className="w-full hidden lg:block overflow-x-auto">
           <div className="w-full px-4">
             {videos.length !== 0 && (
-              <table className="table-fixed w-full text-xs sm:text-sm text-left rtl:text-right text-body">
-                <colgroup>
-                  <col className="w-5/15" />
-                  <col className="w-1/15" />
-                  <col className="w-1/15" />
-                  <col className="w-2/15" />
-                  <col className="w-2/15" />
-                  <col className="w-2/15" />
-                  <col className="w-2/15" />
-                </colgroup>
-                <thead className="text-body bg-neutral-secondary-soft border-b rounded-base border-default">
-                  <tr>
-                    <th className="px-6 py-3">Titel</th>
-                    <th className="px-6 py-3">Status</th>
-                    <th className="px-6 py-3">Länge</th>
-                    <th className="px-6 py-3">Upload</th>
-                    <th className="px-6 py-3 min-w-65">App Link</th>
-                    <th className="px-6 py-3 min-w-65">Mail Link</th>
-                    <th className="px-6 py-3">QR Code</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-neutral-primary border-b border-default">
-                  {videos.map((video) => {
-                    const key = video.id;
-                    const title = video?.metadata?.title;
-                    const status = video.status;
-                    const duration = convertDuration(video.duration);
-                    const created = formatDateTime(video.created);
-                    const mailLink = mailLinks[key];
-                    const appLink = appLinks[key];
-                    const qrCodeLink = qrCodeLinks[key];
-
-                    return (
-                      <tr
-                        key={key}
-                        className="align-middle even:bg-white odd:bg-gray-100"
+              <div>
+                <div className="p-4 w-full">
+                  <label for="search" className="sr-only">
+                    Titel suchen
+                  </label>
+                  <div className="relative">
+                    <div className="absolute flex items-center pointer-events-none"></div>
+                    <input
+                      type="text"
+                      id="search"
+                      className="block w-full ps-9 pe-3 py-2 bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand px-3 shadow-xs placeholder:text-body"
+                      placeholder="Titel suchen"
+                      onChange={(e) => setSearchInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          setSearch(searchInput);
+                          setPage(1);
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+                <table className="table-fixed w-full text-xs sm:text-sm text-left rtl:text-right text-body">
+                  <colgroup>
+                    <col className="w-5/15" />
+                    <col className="w-2/15" />
+                    <col className="w-2/15" />
+                    <col className="w-2/15" />
+                    <col className="w-2/15" />
+                    <col className="w-2/15" />
+                  </colgroup>
+                  <thead className="text-body bg-neutral-secondary-soft border-b rounded-base border-default">
+                    <tr>
+                      <th
+                        className="px-6 py-3 cursor-pointer"
+                        onClick={() => sortTable("title")}
                       >
-                        <td className="px-4 sm:px-6 py-2 sm:py-4">
-                          <div className="flex items-center gap-3 min-w-88">
-                            <img
-                              className="w-32 flex-none"
-                              src={createThumbnailLink(key)}
-                              alt=""
-                            />
-                            <p className="min-w-0 flex-1 wrap-anywhere pr-8">
-                              {title}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="px-4 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
-                          {status}
-                        </td>
-                        <td className="px-4 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
-                          {duration}
-                        </td>
-                        <td className="px-4 sm:px-6 py-2 sm:py-4 align-middle">
-                          <div className="flex flex-col ">
-                            <p className="whitespace-nowrap">
-                              {created.formattedDate}
-                            </p>
-                            <p className="whitespace-nowrap">
-                              {created.formattedTime}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="px-4 sm:px-6 py-2 sm:py-4">
-                          {!appLink && (
-                            <button
-                              type="button"
-                              className="underline cursor-pointer hover:text-blue-400"
-                              onClick={() => createAppLink(key)}
-                            >
-                              anzeigen
-                            </button>
-                          )}
-                          {appLink && (
-                            <div className="flex items-center gap-3 min-w-0">
-                              <a
-                                href={appLink}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="min-w-0 flex-1 wrap-anywhere"
-                              >
-                                {appLink}
-                              </a>
-                              <button
-                                className="w-4 h-4 cursor-pointer flex-none"
-                                onClick={() => copy(appLink)}
-                                type="button"
-                              >
-                                <img src={copyIcon} alt="Kopieren Icon" />
-                              </button>
-                            </div>
-                          )}
-                        </td>
+                        Titel{getSortIndicator("title")}
+                      </th>
+                      <th
+                        className="px-6 py-3 cursor-pointer"
+                        onClick={() => sortTable("duration")}
+                      >
+                        Länge{getSortIndicator("duration")}
+                      </th>
+                      <th
+                        className="px-6 py-3 cursor-pointer"
+                        onClick={() => sortTable("created")}
+                      >
+                        Upload{getSortIndicator("created")}
+                      </th>
+                      <th className="px-6 py-3 min-w-65">App Link</th>
+                      <th className="px-6 py-3 min-w-65">Mail Link</th>
+                      <th className="px-6 py-3">QR Code</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-neutral-primary border-b border-default">
+                    {videos.map((video) => {
+                      const key = video.id;
+                      const title = video?.metadata?.title;
+                      const duration = convertDuration(video.duration);
+                      const created = formatDateTime(video.created);
+                      const mailLink = mailLinks[key];
+                      const appLink = appLinks[key];
+                      const qrCodeLink = qrCodeLinks[key];
 
-                        <td className="px-4 sm:px-6 py-2 sm:py-4">
-                          {!mailLink && (
-                            <button
-                              type="button"
-                              className="underline cursor-pointer hover:text-blue-400"
-                              onClick={() => handleLoadMailLink(key)}
-                            >
-                              anzeigen
-                            </button>
-                          )}
-                          {mailLink && (
-                            <div className="flex items-center gap-3 min-w-0">
-                              <a
-                                href={mailLink}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="min-w-0 flex-1 wrap-anywhere"
-                              >
-                                {mailLink}
-                              </a>
-                              <button
-                                className="w-4 h-4 cursor-pointer flex-none"
-                                onClick={() => copy(mailLink)}
-                                type="button"
-                              >
-                                <img src={copyIcon} alt="Kopieren Icon" />
-                              </button>
+                      return (
+                        <tr
+                          key={key}
+                          className="align-middle even:bg-white odd:bg-gray-100"
+                        >
+                          <td className="px-4 sm:px-6 py-2 sm:py-4">
+                            <div className="flex items-center gap-3 min-w-88">
+                              <img
+                                className="w-32 flex-none"
+                                src={createThumbnailLink(key)}
+                                alt="Thumbnail"
+                              />
+                              <p className="min-w-0 flex-1 wrap-anywhere pr-8">
+                                {title}
+                              </p>
                             </div>
-                          )}
-                        </td>
+                          </td>
 
-                        <td className="px-4 sm:px-6 py-2 sm:py-4">
-                          {!qrCodeLink && (
-                            <button
-                              type="button"
-                              className="underline cursor-pointer hover:text-blue-400"
-                              onClick={() => handleGetQRCodeLink(key)}
-                            >
-                              anzeigen
-                            </button>
-                          )}
-                          {qrCodeLink && (
-                            <div
-                              ref={(el) => {
-                                if (el) qrCodeRefs.current[key] = el;
-                              }}
-                              className="flex items-center justify-between gap-1"
-                            >
-                              <QRCode value={qrCodeLink} size={80} />
-                              <button
-                                className="w-8 h-8 p-1 cursor-pointer"
-                                onClick={() => handleDownloadQRCode(key)}
-                                type="button"
-                                aria-label="SVG herunterladen"
-                              >
-                                <img src={downloadIcon} alt="Download Icon" />
-                              </button>
+                          <td className="px-4 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
+                            {duration}
+                          </td>
+                          <td className="px-4 sm:px-6 py-2 sm:py-4 align-middle">
+                            <div className="flex flex-col ">
+                              <p className="whitespace-nowrap">
+                                {created.formattedDate}
+                              </p>
+                              <p className="whitespace-nowrap">
+                                {created.formattedTime}
+                              </p>
                             </div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          </td>
+                          <td className="px-4 sm:px-6 py-2 sm:py-4">
+                            {!appLink && (
+                              <button
+                                type="button"
+                                className="underline cursor-pointer hover:text-blue-400"
+                                onClick={() => createAppLink(key)}
+                              >
+                                anzeigen
+                              </button>
+                            )}
+                            {appLink && (
+                              <div className="flex items-center gap-3 min-w-0">
+                                <a
+                                  href={appLink}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="min-w-0 flex-1 wrap-anywhere"
+                                >
+                                  {appLink}
+                                </a>
+                                <button
+                                  className="w-4 h-4 cursor-pointer flex-none"
+                                  onClick={() => copy(appLink)}
+                                  type="button"
+                                >
+                                  <img src={copyIcon} alt="Kopieren Icon" />
+                                </button>
+                              </div>
+                            )}
+                          </td>
+
+                          <td className="px-4 sm:px-6 py-2 sm:py-4">
+                            {!mailLink && (
+                              <button
+                                type="button"
+                                className="underline cursor-pointer hover:text-blue-400"
+                                onClick={() => handleLoadMailLink(key)}
+                              >
+                                anzeigen
+                              </button>
+                            )}
+                            {mailLink && (
+                              <div className="flex items-center gap-3 min-w-0">
+                                <a
+                                  href={mailLink}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="min-w-0 flex-1 wrap-anywhere"
+                                >
+                                  {mailLink}
+                                </a>
+                                <button
+                                  className="w-4 h-4 cursor-pointer flex-none"
+                                  onClick={() => copy(mailLink)}
+                                  type="button"
+                                >
+                                  <img src={copyIcon} alt="Kopieren Icon" />
+                                </button>
+                              </div>
+                            )}
+                          </td>
+
+                          <td className="px-4 sm:px-6 py-2 sm:py-4">
+                            {!qrCodeLink && (
+                              <button
+                                type="button"
+                                className="underline cursor-pointer hover:text-blue-400"
+                                onClick={() => handleGetQRCodeLink(key)}
+                              >
+                                anzeigen
+                              </button>
+                            )}
+                            {qrCodeLink && (
+                              <div
+                                ref={(el) => {
+                                  if (el) qrCodeRefs.current[key] = el;
+                                }}
+                                className="flex items-center justify-between gap-1"
+                              >
+                                <QRCode value={qrCodeLink} size={80} />
+                                <button
+                                  className="w-8 h-8 p-1 cursor-pointer"
+                                  onClick={() =>
+                                    handleDownloadQRCode(
+                                      qrCodeRefs.current[key],
+                                      key,
+                                    )
+                                  }
+                                  type="button"
+                                  aria-label="SVG herunterladen"
+                                >
+                                  <img src={downloadIcon} alt="Download Icon" />
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>

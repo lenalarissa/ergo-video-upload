@@ -1,93 +1,147 @@
-import {useCallback, useMemo, useState} from 'react'
+import { useCallback, useMemo, useState } from "react";
 import Header from "@/components/Header.jsx";
 import SignIn from "@/components/SignIn.jsx";
 import Footer from "@/components/Footer.jsx";
 import MainContent from "@/components/MainContent.jsx";
-import {Redirect, Route, Switch} from "react-router-dom";
+import { Redirect, Route, Switch } from "react-router-dom";
 import VideoGallery from "@/components/VideoGallery.jsx";
-import {AuthContext} from '@/library/pageComponents/AuthContext'
+import { AuthContext } from "@/library/pageComponents/AuthContext";
 
 function App() {
+  const [mailLink, setMailLink] = useState(null);
+  const [user, setUser] = useState(null);
 
-    const [mailLink, setMailLink] = useState("https://cdn.jwplayer.com/videos/8eF2KHP5-L8vacHUe.mp4");
+  const refreshAuth = useCallback(async () => {
+    return user;
+  }, [user]);
 
-    const [user, setUser] = useState(null);
+  const authContextValue = useMemo(
+    () => ({
+      refreshAuth,
+      user,
+    }),
+    [refreshAuth, user],
+  );
 
-    const refreshAuth = useCallback(async () => {
-        return user;
-    }, [user]);
+  function wait(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
 
-    const authContextValue = useMemo(() => ({
-        refreshAuth,
-        user
-    }), [refreshAuth, user]);
+  const createMailLink = useCallback(async (id) => {
+    try {
+      const response = await fetch(
+        `https://ergopro-ecloud.equeo.de/rest/v1/videos/renditions/${id}`,
+        {
+          headers: {
+            Authorization: "Bearer " + localStorage.getItem("access_token"),
+          },
+        },
+      );
 
-    const createMailLink = useCallback(async (id)=> {
-        try {
-            const response = await fetch(`https://ergopro-ecloud.equeo.de/rest/v1/videos/renditions/${id}`, {
-                headers: {
-                    Authorization: "Bearer " + localStorage.getItem("access_token")
-                }
-            });
+      if (!response.ok) {
+        console.error(`Fehler bei Renditions für ${id}: ${response.status}`);
+        return "";
+      }
+      const result = await response.json();
+      const renditions = result.media_renditions;
+      console.log(renditions);
 
-            if (!response.ok) {
-                console.error(`Fehler bei Renditions für ${id}: ${response.status}`);
-                return "-";
-            }
-            const result = await response.json();
-            const renditions = result.media_renditions;
-            console.log(renditions);
+      if (renditions.length === 0) {
+        return "";
+      }
 
-            const videoRenditions = renditions.filter(r => r.media_type === "video");
-            if (videoRenditions.length === 0){
-                return "-";
-            }
+      const videoRenditions = renditions.filter((r) => {
+        return r.media_type === "video";
+      });
 
-            const video = videoRenditions.sort((a, b) => b.height - a.height)[0];
-            console.log(video);
-            const url = video.delivery_url.replace("cdn.jwplayer.com", "cdn.equeo.de");
-            setMailLink(url);
-            return url;
-        } catch (e) {
-            console.error(e);
-            return "-";
-        }
-    }, []);
+      if (videoRenditions.length === 0) {
+        return "";
+      }
 
+      const allVideosReady = videoRenditions.every((r) => {
+        return (
+          typeof r.delivery_url === "string" && r.delivery_url.trim() !== ""
+        );
+      });
 
-    return (
-        <div className="flex flex-col gap-4 min-h-screen bg-white">
-            <AuthContext.Provider value={authContextValue}>
-                <Header setUser={setUser}/>
+      if (!allVideosReady) {
+        return "";
+      }
 
-                {user !== null ? (
-                    <Switch>
-                        <Route exact path="/">
-                            <Redirect to="/upload"/>
-                        </Route>
+      const video = videoRenditions.sort((a, b) => b.height - a.height)[0];
 
-                        <Route
-                            path="/upload"
-                            render={() => <MainContent mailLink={ mailLink }/>}
-                        />
+      if (!video?.delivery_url) {
+        return "";
+      }
 
-                        <Route
-                            path="/gallery"
-                            render={() => <VideoGallery createMailLink={createMailLink}/>}
-                        />
+      const url = video.delivery_url.replace(
+        "cdn.jwplayer.com",
+        "cdn.equeo.de",
+      );
+      setMailLink(url);
+      return url;
+    } catch (e) {
+      console.error(e);
+      return "";
+    }
+  }, []);
 
-                        <Route>
-                            <Redirect to="/upload"/>
-                        </Route>
-                    </Switch>
-                ) : (
-                    <SignIn setUser={setUser}/>
-                )}
+  async function pollForMailLink(id, maxAttempts = 1000, delay = 5000) {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const mailUrl = await createMailLink(id);
 
-                <Footer/>
-            </AuthContext.Provider>
-        </div>
-    );
+      if (mailUrl && mailUrl !== "") {
+        return mailUrl;
+      }
+
+      console.log(
+        `Noch keine Rendition. Versuch ${attempt} von ${maxAttempts}`,
+      );
+
+      await wait(delay);
+    }
+
+    return "";
+  }
+
+  return (
+    <div className="flex flex-col gap-4 min-h-screen bg-white">
+      <AuthContext.Provider value={authContextValue}>
+        <Header setUser={setUser} />
+
+        {user !== null ? (
+          <Switch>
+            <Route exact path="/">
+              <Redirect to="/upload" />
+            </Route>
+
+            <Route
+              path="/upload"
+              render={() => (
+                <MainContent
+                  mailLink={mailLink}
+                  pollForMailLink={pollForMailLink}
+                />
+              )}
+            />
+
+            <Route
+              path="/gallery"
+              render={() => <VideoGallery createMailLink={createMailLink} />}
+            />
+
+            <Route>
+              <Redirect to="/upload" />
+            </Route>
+          </Switch>
+        ) : (
+          <SignIn setUser={setUser} />
+        )}
+
+        <Footer />
+      </AuthContext.Provider>
+    </div>
+  );
 }
 
 export default App;
