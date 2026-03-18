@@ -1,6 +1,7 @@
 import uploadIcon from "@/assets/datei-upload.svg";
 import entfernenIcon from "@/assets/entfernen.svg";
 import { useState } from "react";
+import getAccessToken from "@/utils/Auth.js";
 
 export default function FileUpload({
   title,
@@ -79,13 +80,18 @@ export default function FileUpload({
 
   async function uploadTitle(title, type, file) {
     try {
+      const token = await getAccessToken();
+      if (!token) {
+        console.error("No access token available");
+        return;
+      }
       const response = await fetch(
         "https://ergopro-ecloud.equeo.de/rest/v1/videos/createMedia",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: "Bearer " + localStorage.getItem("access_token"),
+            Authorization: "Bearer " + token,
           },
           body: JSON.stringify({ title, type }),
         },

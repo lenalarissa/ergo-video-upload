@@ -5,6 +5,7 @@ import downloadIcon from "@/assets/datei-download.svg";
 import { useEffect, useRef, useState } from "react";
 import QRCode from "react-qr-code";
 import handleDownloadQRCode from "@/utils/HandleDownloadQRCode.js";
+import getAccessToken from "@/utils/Auth.js";
 
 export default function VideoGallery({ createMailLink }) {
   const [videos, setVideos] = useState([]);
@@ -37,6 +38,11 @@ export default function VideoGallery({ createMailLink }) {
 
     async function fetchVideos() {
       try {
+        const token = await getAccessToken();
+        if (!token) {
+          console.error("No access token available");
+          return;
+        }
         // als default wenn weder sort noch order übergeben werden: sort=created und order=dsc
         //falls sort gesetzt ist aber order fehlt: asc als default
         //falls order gesetzt aber sort fehlt: created als default
@@ -45,7 +51,7 @@ export default function VideoGallery({ createMailLink }) {
           `https://ergopro-ecloud.equeo.de/rest/v1/videos?tags=ergo,ergo%20pro&limit=50&offset=${offset}&sort=${sortBy}&order=${sortOrder}${query}`,
           {
             headers: {
-              Authorization: "Bearer " + localStorage.getItem("access_token"),
+              Authorization: "Bearer " + token,
             },
           },
         );

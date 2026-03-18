@@ -27,14 +27,9 @@ export default function SignIn({ setUser }) {
     const password = formData.get("password");
 
     const result = await login(email, password, REGISTER_CLIENT, USER_CLIENT);
+    localStorage.setItem("result", JSON.stringify(result));
     setUser(result.user);
-    localStorage.setItem("access_token", result.access_token);
-    if (result.refresh_token)
-      localStorage.setItem("refresh_token", result.refresh_token);
-
-    localStorage.setItem("user", JSON.stringify(result.user));
-    localStorage.setItem("expires_at", String(result.expires_at));
-
+    console.log("Login successful, result stored in localStorage:", result);
     return result;
   }
 

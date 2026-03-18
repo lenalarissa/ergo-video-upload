@@ -1,27 +1,16 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import Header from "@/components/Header.jsx";
 import SignIn from "@/components/SignIn.jsx";
 import Footer from "@/components/Footer.jsx";
 import MainContent from "@/components/MainContent.jsx";
 import { Redirect, Route, Switch } from "react-router-dom";
 import VideoGallery from "@/components/VideoGallery.jsx";
-import { AuthContext } from "@/library/pageComponents/AuthContext";
+import getUser from "./utils/GetUser";
+import getAccessToken from "@/utils/Auth.js";
 
 function App() {
   const [mailLink, setMailLink] = useState(null);
-  const [user, setUser] = useState(null);
-
-  const refreshAuth = useCallback(async () => {
-    return user;
-  }, [user]);
-
-  const authContextValue = useMemo(
-    () => ({
-      refreshAuth,
-      user,
-    }),
-    [refreshAuth, user],
-  );
+  const [user, setUser] = useState(() => getUser());
 
   function wait(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -29,11 +18,16 @@ function App() {
 
   const createMailLink = useCallback(async (id) => {
     try {
+      const token = await getAccessToken();
+      if (!token) {
+        console.error("No access token available");
+        return;
+      }
       const response = await fetch(
         `https://ergopro-ecloud.equeo.de/rest/v1/videos/renditions/${id}`,
         {
           headers: {
-            Authorization: "Bearer " + localStorage.getItem("access_token"),
+            Authorization: "Bearer " + token,
           },
         },
       );
@@ -106,40 +100,38 @@ function App() {
 
   return (
     <div className="flex flex-col gap-4 min-h-screen bg-white">
-      <AuthContext.Provider value={authContextValue}>
-        <Header setUser={setUser} />
+      <Header setUser={setUser} />
 
-        {user !== null ? (
-          <Switch>
-            <Route exact path="/">
-              <Redirect to="/upload" />
-            </Route>
+      {user !== null ? (
+        <Switch>
+          <Route exact path="/">
+            <Redirect to="/upload" />
+          </Route>
 
-            <Route
-              path="/upload"
-              render={() => (
-                <MainContent
-                  mailLink={mailLink}
-                  pollForMailLink={pollForMailLink}
-                />
-              )}
-            />
+          <Route
+            path="/upload"
+            render={() => (
+              <MainContent
+                mailLink={mailLink}
+                pollForMailLink={pollForMailLink}
+              />
+            )}
+          />
 
-            <Route
-              path="/gallery"
-              render={() => <VideoGallery createMailLink={createMailLink} />}
-            />
+          <Route
+            path="/gallery"
+            render={() => <VideoGallery createMailLink={createMailLink} />}
+          />
 
-            <Route>
-              <Redirect to="/upload" />
-            </Route>
-          </Switch>
-        ) : (
-          <SignIn setUser={setUser} />
-        )}
+          <Route>
+            <Redirect to="/upload" />
+          </Route>
+        </Switch>
+      ) : (
+        <SignIn setUser={setUser} />
+      )}
 
-        <Footer />
-      </AuthContext.Provider>
+      <Footer />
     </div>
   );
 }
