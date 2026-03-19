@@ -1,6 +1,16 @@
 import { getActualizedToken } from "eqmod-ts-userlogin";
 
-const USER_CLIENT = {
+export const AUTH_HOST = import.meta.env.VITE_AUTH_HOST;
+
+export const REGISTER_CLIENT = {
+    tokenUrl: `${AUTH_HOST}/oauth/token`,
+    clientId: import.meta.env.VITE_REGISTER_CLIENT_ID,
+    clientSecret: import.meta.env.VITE_REGISTER_CLIENT_SECRET,
+    scopes: ["authUser:read", "authUser:register"],
+  };
+
+
+export const USER_CLIENT = {
   tokenUrl: import.meta.env.VITE_AUTH_HOST + "/oauth/token",
   clientId: import.meta.env.VITE_USER_CLIENT_ID,
   clientSecret: import.meta.env.VITE_USER_CLIENT_SECRET,
@@ -9,7 +19,7 @@ const USER_CLIENT = {
     .filter(Boolean),
 };
 
-export default async function getAccessToken() {
+export async function getAccessToken() {
     const stored = localStorage.getItem("result");
     if (!stored) return null;
     
@@ -17,7 +27,7 @@ export default async function getAccessToken() {
     try {
         auth = JSON.parse(stored);
     } catch (e) {
-        console.error("Failed to parse stored auth result:", e);
+        console.error(e);
         return null;
     }
 
@@ -26,7 +36,7 @@ export default async function getAccessToken() {
         localStorage.setItem("result", JSON.stringify(updatedAuth));
         return updatedAuth.access_token;
     } catch (e) {
-        console.error("Failed to update access token:", e);
+        console.error(e);
         return null;
     }
 }

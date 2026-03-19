@@ -5,8 +5,8 @@ export default function VideoTitle({ setTitle }) {
       const formData = new FormData(e.currentTarget);
       const title = formData.get("title");
       setTitle(title);
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.error(e);
     }
   }
 

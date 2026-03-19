@@ -1,9 +1,9 @@
 import downloadIcon from "@/assets/datei-download.svg";
 import QRCode from "react-qr-code";
 import { useRef } from "react";
-import handleDownloadQRCode from "@/utils/HandleDownloadQRCode.js";
+import handleDownloadQRCode from "@/utils/handleDownloadQRCode.js";
 
-export default function QRCodeComp({ url, videoId }) {
+export default function QrCode({ url, videoId }) {
   const qrCodeRef = useRef(null);
 
   return (

@@ -1,12 +1,12 @@
 import { useCallback, useState } from "react";
-import Header from "@/components/Header.jsx";
-import SignIn from "@/components/SignIn.jsx";
-import Footer from "@/components/Footer.jsx";
-import MainContent from "@/components/MainContent.jsx";
+import Header from "@/components/layout/Header.jsx";
+import SignIn from "@/components/sign-in/SignIn.jsx";
+import Footer from "@/components/layout/Footer.jsx";
+import MainContent from "@/components/layout/MainContent.jsx";
 import { Redirect, Route, Switch } from "react-router-dom";
-import VideoGallery from "@/components/VideoGallery.jsx";
-import getUser from "./utils/GetUser";
-import getAccessToken from "@/utils/Auth.js";
+import VideoTable from "@/components/video-table/VideoTable.jsx";
+import getUser from "@/auth/getUser.js";
+import { getAccessToken } from "@/auth/auth.js";
 
 function App() {
   const [mailLink, setMailLink] = useState(null);
@@ -20,7 +20,6 @@ function App() {
     try {
       const token = await getAccessToken();
       if (!token) {
-        console.error("No access token available");
         return;
       }
       const response = await fetch(
@@ -33,12 +32,10 @@ function App() {
       );
 
       if (!response.ok) {
-        console.error(`Fehler bei Renditions für ${id}: ${response.status}`);
         return "";
       }
       const result = await response.json();
       const renditions = result.media_renditions;
-      console.log(renditions);
 
       if (renditions.length === 0) {
         return "";
@@ -64,10 +61,6 @@ function App() {
 
       const video = videoRenditions.sort((a, b) => b.height - a.height)[0];
 
-      if (!video?.delivery_url) {
-        return "";
-      }
-
       const url = video.delivery_url.replace(
         "cdn.jwplayer.com",
         "cdn.equeo.de",
@@ -87,14 +80,8 @@ function App() {
       if (mailUrl && mailUrl !== "") {
         return mailUrl;
       }
-
-      console.log(
-        `Noch keine Rendition. Versuch ${attempt} von ${maxAttempts}`,
-      );
-
       await wait(delay);
     }
-
     return "";
   }
 
@@ -119,8 +106,8 @@ function App() {
           />
 
           <Route
-            path="/gallery"
-            render={() => <VideoGallery createMailLink={createMailLink} />}
+            path="/videotable"
+            render={() => <VideoTable createMailLink={createMailLink} />}
           />
 
           <Route>

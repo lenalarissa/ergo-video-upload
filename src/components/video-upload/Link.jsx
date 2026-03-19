@@ -2,7 +2,7 @@ import copyIcon from "@/assets/kopieren-und-einfugen.svg";
 import { useRef } from "react";
 import copy from "copy-to-clipboard";
 
-export default function Links({ title, link }) {
+export default function Link({ title, link }) {
   const textRef = useRef();
 
   return (

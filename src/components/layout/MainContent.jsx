@@ -1,12 +1,11 @@
-import Links from "@/components/Links.jsx";
-import FileUpload from "@/components/FileUpload.jsx";
-import QRCodeComp from "@/components/QRCodeComp.jsx";
+import Link from "@/components/video-upload/Link.jsx";
+import VideoUpload from "@/components/video-upload/VideoUpload.jsx";
+import QrCode from "@/components/video-upload/QrCode.jsx";
 import { useState } from "react";
-import VideoTitle from "@/components/VideoTitle.jsx";
+import VideoTitle from "@/components/video-upload/VideoTitle.jsx";
 
 export default function MainContent({ mailLink, pollForMailLink }) {
   const [title, setTitle] = useState(null);
-  const [video, setVideo] = useState(null);
   const [appLink, setAppLink] = useState("");
   const [videoId, setVideoId] = useState(null);
 
@@ -15,20 +14,19 @@ export default function MainContent({ mailLink, pollForMailLink }) {
       {title === null ? (
         <VideoTitle setTitle={setTitle} />
       ) : (
-        <FileUpload
+        <VideoUpload
           title={title}
-          setVideo={setVideo}
           setAppLink={setAppLink}
           pollForMailLink={pollForMailLink}
           setVideoId={setVideoId}
           setTitle={setTitle}
         />
       )}
-      {video !== null && (
+      {videoId !== null && (
         <div className="w-full max-w-lg">
-          <Links title={"Link für App:"} link={appLink} />
-          <Links title={"Link für Mail:"} link={mailLink} />
-          <QRCodeComp url={mailLink} videoId={videoId} />
+          <Link title={"Link für App:"} link={appLink} />
+          <Link title={"Link für Mail:"} link={mailLink} />
+          <QrCode url={mailLink} videoId={videoId} />
         </div>
       )}
     </main>

@@ -8,7 +8,8 @@ export default function Header({ user, setUser }) {
   const history = useHistory();
 
   const src = location.pathname === "/upload" ? archiveIcon : uploadIcon;
-  const targetPath = location.pathname === "/upload" ? "/gallery" : "/upload";
+  const targetPath =
+    location.pathname === "/upload" ? "/videotable" : "/upload";
   const alt =
     location.pathname === "/upload" ? "Archive Icon" : "Video Upload Icon";
 

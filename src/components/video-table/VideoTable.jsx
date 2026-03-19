@@ -1,13 +1,18 @@
-import VideoCard from "@/components/VideoCard.jsx";
+import VideoCard from "@/components/video-table/VideoCard.jsx";
 import copy from "copy-to-clipboard";
 import copyIcon from "@/assets/kopieren-und-einfugen.svg";
 import downloadIcon from "@/assets/datei-download.svg";
 import { useEffect, useRef, useState } from "react";
 import QRCode from "react-qr-code";
-import handleDownloadQRCode from "@/utils/HandleDownloadQRCode.js";
-import getAccessToken from "@/utils/Auth.js";
+import handleDownloadQRCode from "@/utils/handleDownloadQRCode.js";
+import { getAccessToken } from "@/auth/auth.js";
+import {
+  convertDuration,
+  formatDateTime,
+  createThumbnailLink,
+} from "@/utils/videoTableUtilities.js";
 
-export default function VideoGallery({ createMailLink }) {
+export default function VideoTable({ createMailLink }) {
   const [videos, setVideos] = useState([]);
   const [mailLinks, setMailLinks] = useState({});
   const [appLinks, setAppLinks] = useState({});
@@ -21,14 +26,31 @@ export default function VideoGallery({ createMailLink }) {
   const [sortOrder, setSortOrder] = useState("dsc");
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+
+  const qrCodeRefs = useRef({});
+
   const pageSize = 50;
+  const totalPages = Math.max(1, Math.ceil(totalVideos / pageSize));
 
-  function showNotice(message) {
-    setNotice(message);
+  function setPageClamped(targetPage) {
+    const clamped = Math.min(Math.max(1, targetPage), totalPages);
+    setPage(clamped);
+  }
 
-    setTimeout(() => {
-      setNotice("");
-    }, 2500);
+  function sortTable(column) {
+    if (sortBy === column) {
+      setSortOrder((prev) => (prev === "asc" ? "dsc" : "asc"));
+    } else {
+      setSortBy(column);
+      setSortOrder("asc");
+    }
+    setPage(1);
+  }
+
+  function getSortIndicator(column) {
+    if (sortBy === column) {
+      return sortOrder === "asc" ? " ↑" : " ↓";
+    }
   }
 
   useEffect(() => {
@@ -40,13 +62,12 @@ export default function VideoGallery({ createMailLink }) {
       try {
         const token = await getAccessToken();
         if (!token) {
-          console.error("No access token available");
           return;
         }
-        // als default wenn weder sort noch order übergeben werden: sort=created und order=dsc
-        //falls sort gesetzt ist aber order fehlt: asc als default
-        //falls order gesetzt aber sort fehlt: created als default
 
+        // default: sort=created und order=dsc
+        // sort, but no order: asc als default
+        // order, but nor sort: created als default
         const response = await fetch(
           `https://ergopro-ecloud.equeo.de/rest/v1/videos?tags=ergo,ergo%20pro&limit=50&offset=${offset}&sort=${sortBy}&order=${sortOrder}${query}`,
           {
@@ -71,11 +92,16 @@ export default function VideoGallery({ createMailLink }) {
         console.error(e);
       }
     }
-
     fetchVideos();
   }, [page, sortBy, sortOrder, search]);
 
-  const qrCodeRefs = useRef({});
+  function showNotice(message) {
+    setNotice(message);
+
+    setTimeout(() => {
+      setNotice("");
+    }, 2500);
+  }
 
   async function handleLoadMailLink(videoId) {
     if (mailLinks[videoId]) return;
@@ -97,7 +123,7 @@ export default function VideoGallery({ createMailLink }) {
       console.error(e);
       setMailLinks((prev) => ({
         ...prev,
-        [videoId]: "-",
+        [videoId]: "",
       }));
     }
   }
@@ -116,55 +142,11 @@ export default function VideoGallery({ createMailLink }) {
       );
     }
 
-    if (!link || link === "-") return;
+    if (!link || link === "") return;
     setQrCodeLinks((prev) => ({
       ...prev,
       [videoId]: link,
     }));
-  }
-
-  function convertDuration(totalMinutes) {
-    const totalSeconds = Math.round(totalMinutes * 60);
-
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    const hh = String(hours).padStart(2, "0");
-    const mm = String(minutes).padStart(2, "0");
-    const ss = String(seconds).padStart(2, "0");
-
-    return `${hh}:${mm}:${ss}`;
-  }
-
-  function formatDateTime(dateString) {
-    const date = new Date(dateString);
-
-    const formattedDate = Intl.DateTimeFormat("de-DE", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }).format(date);
-
-    const formattedTime = Intl.DateTimeFormat("de-DE", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-      timeZone: "UTC",
-    }).format(date);
-
-    return { formattedDate, formattedTime };
-  }
-
-  function createThumbnailLink(id) {
-    return `https://cdn.jwplayer.com/thumbs/${id}.jpg`;
-  }
-
-  const totalPages = Math.max(1, Math.ceil(totalVideos / pageSize));
-
-  function setPageClamped(targetPage) {
-    const clamped = Math.min(Math.max(1, targetPage), totalPages);
-    setPage(clamped);
   }
 
   function createAppLink(videoId) {
@@ -172,7 +154,6 @@ export default function VideoGallery({ createMailLink }) {
 
     try {
       const link = `https://cdn.equeo.de/manifests/${videoId}.m3u8`;
-
       setAppLinks((prev) => ({
         ...prev,
         [videoId]: link,
@@ -183,23 +164,6 @@ export default function VideoGallery({ createMailLink }) {
         ...prev,
         [videoId]: "-",
       }));
-    }
-  }
-
-  function sortTable(column) {
-    if (sortBy === column) {
-      setSortOrder((prev) => (prev === "asc" ? "dsc" : "asc"));
-    } else {
-      setSortBy(column);
-      setSortOrder("asc");
-    }
-
-    setPage(1);
-  }
-
-  function getSortIndicator(column) {
-    if (sortBy === column) {
-      return sortOrder === "asc" ? " ↑" : " ↓";
     }
   }
 
@@ -422,9 +386,6 @@ export default function VideoGallery({ createMailLink }) {
               <VideoCard
                 key={video.id}
                 video={video}
-                convertDuration={convertDuration}
-                formatDateTime={formatDateTime}
-                createThumbnailLink={createThumbnailLink}
                 mailLinks={mailLinks}
                 appLinks={appLinks}
                 qrCodeLinks={qrCodeLinks}

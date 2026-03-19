@@ -3,12 +3,14 @@ import QRCode from "react-qr-code";
 import copyIcon from "@/assets/kopieren-und-einfugen.svg";
 import downloadIcon from "@/assets/datei-download.svg";
 import copy from "copy-to-clipboard";
-
-export default function VideoCard({
-  video,
+import {
   convertDuration,
   formatDateTime,
   createThumbnailLink,
+} from "@/utils/videoTableUtilities.js";
+
+export default function VideoCard({
+  video,
   mailLinks = {},
   appLinks = {},
   qrCodeLinks = {},
@@ -21,9 +23,9 @@ export default function VideoCard({
   const appLink = appLinks?.[video.id];
   const qrCodeLink = qrCodeLinks?.[video.id];
 
-  const [open, setOpen] = useState(false);
-
   const { formattedDate, formattedTime } = formatDateTime(video.created);
+
+  const [open, setOpen] = useState(false);
 
   const qrCodeRefs = useRef({});
 

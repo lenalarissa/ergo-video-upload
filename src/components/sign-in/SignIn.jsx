@@ -1,35 +1,16 @@
 import { useHistory } from "react-router-dom";
 import { login } from "eqmod-ts-userlogin";
+import { REGISTER_CLIENT, USER_CLIENT } from "@/auth/auth.js";
 
 export default function SignIn({ setUser }) {
   const history = useHistory();
 
-  const AUTH_HOST = import.meta.env.VITE_AUTH_HOST;
-
-  const REGISTER_CLIENT = {
-    tokenUrl: `${AUTH_HOST}/oauth/token`,
-    clientId: import.meta.env.VITE_REGISTER_CLIENT_ID,
-    clientSecret: import.meta.env.VITE_REGISTER_CLIENT_SECRET,
-    scopes: ["authUser:read", "authUser:register"],
-  };
-
-  const USER_CLIENT = {
-    tokenUrl: `${AUTH_HOST}/oauth/token`,
-    clientId: import.meta.env.VITE_USER_CLIENT_ID,
-    clientSecret: import.meta.env.VITE_USER_CLIENT_SECRET,
-    scopes: (import.meta.env.VITE_USER_SCOPES || "")
-      .split(/\s+/)
-      .filter(Boolean),
-  };
-
   async function signIn(formData) {
     const email = formData.get("email");
     const password = formData.get("password");
-
     const result = await login(email, password, REGISTER_CLIENT, USER_CLIENT);
     localStorage.setItem("result", JSON.stringify(result));
     setUser(result.user);
-    console.log("Login successful, result stored in localStorage:", result);
     return result;
   }
 
@@ -39,8 +20,8 @@ export default function SignIn({ setUser }) {
       const formData = new FormData(e.currentTarget);
       await signIn(formData);
       history.push("/upload");
-    } catch (err) {
-      console.error(err);
+    } catch (e) {
+      console.error(e);
     }
   }
 

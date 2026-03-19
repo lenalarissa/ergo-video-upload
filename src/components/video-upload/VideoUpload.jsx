@@ -1,21 +1,23 @@
 import uploadIcon from "@/assets/datei-upload.svg";
-import entfernenIcon from "@/assets/entfernen.svg";
 import { useState } from "react";
-import getAccessToken from "@/utils/Auth.js";
+import { getAccessToken } from "@/auth/auth.js";
+import UploadProgress from "@/components/video-upload/UploadProgress.jsx";
+import { Video } from "lucide-react";
+import SuccessfullUpload from "./SuccessfullUpload";
 
-export default function FileUpload({
+export default function VideoUpload({
   title,
-  setVideo,
   setAppLink,
   pollForMailLink,
   setVideoId,
   setTitle,
 }) {
   const [uploadedVideo, setUploadedVideo] = useState(null);
+
   const [isDragging, setIsDragging] = useState(false);
+
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
-
   const [isProcessing, setIsProcessing] = useState(false);
 
   function onProgress(percent) {
@@ -60,18 +62,16 @@ export default function FileUpload({
       setIsUploading(false);
 
       const mailUrl = await pollForMailLink(id);
-      if (mailUrl && mailUrl !== "-") {
+      if (mailUrl && mailUrl !== "") {
         setAppLink(`https://cdn.equeo.de/manifests/${id}.m3u8`);
         setVideoId(id);
         setIsUploading(false);
         setIsProcessing(false);
-        setVideo(file);
       } else {
-        console.error("Mail-Link konnte nicht erzeugt werden.");
         setIsUploading(false);
       }
     } catch (e) {
-      console.log(e);
+      console.error(e);
       setIsUploading(false);
       setIsProcessing(false);
       setUploadProgress(0);
@@ -82,7 +82,6 @@ export default function FileUpload({
     try {
       const token = await getAccessToken();
       if (!token) {
-        console.error("No access token available");
         return;
       }
       const response = await fetch(
@@ -124,22 +123,22 @@ export default function FileUpload({
     uploadTitle(title, file.type, file);
   };
 
-  async function onFileUpload(event) {
-    const file = event.target.files?.[0];
+  async function onFileUpload(e) {
+    const file = e.target.files?.[0];
     if (!file) return;
     uploadTitle(title, file.type, file);
   }
 
   function removeVideo() {
     setUploadedVideo(null);
-    setVideo(null);
-    setAppLink("");
     setVideoId(null);
+    setAppLink("");
     setIsUploading(false);
     setIsProcessing(false);
     setUploadProgress(0);
     setTitle(null);
   }
+
   return (
     <div
       className={`flex flex-col min-h-60 w-full max-w-lg bg-gray-50 border-gray-400 border-2 rounded border-dashed
@@ -151,50 +150,11 @@ export default function FileUpload({
       onDragLeave={handleDragLeave}
     >
       {isUploading ? (
-        <div className="flex flex-col items-center justify-center flex-1 gap-4 p-6">
-          <p className="font-bold text-center break-all text-ergo-rot">
-            {title}
-          </p>
-          <div className="w-full max-w-xs">
-            <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-ergo-rot transition-all duration-200"
-                style={{ width: `${uploadProgress}%` }}
-              />
-            </div>
-            <p className="text-sm text-center mt-2">
-              Upload läuft... {uploadProgress}%
-            </p>
-          </div>
-        </div>
+        <UploadProgress title={title} uploadProgress={uploadProgress} />
       ) : isProcessing ? (
-        <div className="flex flex-col items-center justify-center flex-1 gap-4 p-6 text-center">
-          <p className="font-bold text-2xl break-all text-ergo-rot">{title}</p>
-          <p className="font-bold">Upload abgeschlossen.</p>
-          <p className="text-sm max-w-md p-4">
-            Das Video wird nun verarbeitet. Die Links stehen in Kürze zur
-            Verfügung. Sie können auf dieser Seite bleiben – die Links
-            erscheinen automatisch, sobald sie bereit sind. Alternativ finden
-            Sie das Video später auch in der Video Gallery, sobald alle Links
-            zur Verfügung stehen.
-          </p>
-          <button
-            onClick={removeVideo}
-            className="text-center bg-gray-300 text-black shadow rounded-sm border border-black p-1 px-4 text-xs sm:text-sm cursor-pointer"
-          >
-            Neues Video hochladen
-          </button>
-        </div>
+        <VideoProcessing title={title} removeVideo={removeVideo} />
       ) : uploadedVideo ? (
-        <div className="relative flex flex-col items-center flex-1 justify-center gap-2 m-15 p-4 border-black bg-white border-2 rounded shadow-lg">
-          <button className="absolute top-0 right-0 translate-x-1/2 -translate-y-1/2 w-6 h-6 bg-white cursor-pointer">
-            <img src={entfernenIcon} alt="Remove Icon" onClick={removeVideo} />
-          </button>
-          Erfolgreich hochgeladen:
-          <p className="font-bold text-center break-all text-ergo-rot px-2">
-            {title}
-          </p>
-        </div>
+        <SuccessfullUpload title={title} removeVideo={removeVideo} />
       ) : (
         <div className="min-h-60 flex flex-col items-center w-full max-w-lg text-center">
           <div className="flex-1 flex items-center justify-center flex-col gap-4">
