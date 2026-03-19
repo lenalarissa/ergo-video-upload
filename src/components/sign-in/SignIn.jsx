@@ -1,8 +1,10 @@
 import { useHistory } from "react-router-dom";
 import { login } from "eqmod-ts-userlogin";
 import { REGISTER_CLIENT, USER_CLIENT } from "@/auth/auth.js";
+import useAuth from "@/auth/useAuth.js";
 
-export default function SignIn({ setUser }) {
+export default function SignIn() {
+  const { setUser } = useAuth();
   const history = useHistory();
 
   async function signIn(formData) {

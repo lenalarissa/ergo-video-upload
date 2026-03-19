@@ -5,7 +5,7 @@ import downloadIcon from "@/assets/datei-download.svg";
 import { useEffect, useRef, useState } from "react";
 import QRCode from "react-qr-code";
 import handleDownloadQRCode from "@/utils/handleDownloadQRCode.js";
-import { getAccessToken } from "@/auth/auth.js";
+import useAuth from "@/auth/useAuth.js";
 import {
   convertDuration,
   formatDateTime,
@@ -13,6 +13,8 @@ import {
 } from "@/utils/videoTableUtilities.js";
 
 export default function VideoTable({ createMailLink }) {
+  const { getAccessToken } = useAuth();
+
   const [videos, setVideos] = useState([]);
   const [mailLinks, setMailLinks] = useState({});
   const [appLinks, setAppLinks] = useState({});
@@ -93,7 +95,7 @@ export default function VideoTable({ createMailLink }) {
       }
     }
     fetchVideos();
-  }, [page, sortBy, sortOrder, search]);
+  }, [page, sortBy, sortOrder, search, getAccessToken]);
 
   function showNotice(message) {
     setNotice(message);

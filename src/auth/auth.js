@@ -19,22 +19,58 @@ export const USER_CLIENT = {
     .filter(Boolean),
 };
 
-export async function getAccessToken() {
-    const stored = localStorage.getItem("result");
-    if (!stored) return null;
-    
-    let auth;
-    try {
-        auth = JSON.parse(stored);
-    } catch (e) {
-        console.error(e);
-        return null;
-    }
+export function clearAuth() {
+    localStorage.removeItem("result");
+}
+
+function getStoredAuth() {
+  const stored = localStorage.getItem("result");
+  if (!stored) return null;
+
+  try {
+    return JSON.parse(stored);
+  } catch (e) {
+    console.error(e);
+    return null;
+  }
+}
+
+export async function refreshAccessToken() {
+    const auth = getStoredAuth();
+    if (!auth) return { accessToken: null, invalidGrant: false };
 
     try {
         const updatedAuth = await getActualizedToken(auth, USER_CLIENT);
         localStorage.setItem("result", JSON.stringify(updatedAuth));
-        return updatedAuth.access_token;
+
+        return {
+            accessToken: updatedAuth.access_token,
+            invalidGrant: false,
+        };
+    } catch (e) {
+        console.error(e);
+
+        const invalidGrant =
+            e?.response?.data?.error === "invalid_grant" ||
+            e?.error === "invalid_grant";
+
+        if (invalidGrant) {
+            clearAuth();
+        }
+
+        return {
+            accessToken: null,
+            invalidGrant,
+        };
+    }
+}
+
+export function getUser() {
+    const userData = localStorage.getItem("result");
+
+    try {
+        const user = userData ? JSON.parse(userData).user : null;
+        return user;
     } catch (e) {
         console.error(e);
         return null;

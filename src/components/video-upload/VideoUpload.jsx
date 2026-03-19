@@ -1,9 +1,9 @@
 import uploadIcon from "@/assets/datei-upload.svg";
 import { useState } from "react";
-import { getAccessToken } from "@/auth/auth.js";
+import useAuth from "@/auth/useAuth.js";
 import UploadProgress from "@/components/video-upload/UploadProgress.jsx";
-import { Video } from "lucide-react";
 import SuccessfullUpload from "./SuccessfullUpload";
+import VideoProcessing from "./VideoProcessing.jsx";
 
 export default function VideoUpload({
   title,
@@ -12,6 +12,7 @@ export default function VideoUpload({
   setVideoId,
   setTitle,
 }) {
+  const { getAccessToken } = useAuth();
   const [uploadedVideo, setUploadedVideo] = useState(null);
 
   const [isDragging, setIsDragging] = useState(false);
