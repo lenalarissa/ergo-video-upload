@@ -1,12 +1,12 @@
 import logOutIcon from "@/assets/ausloggen.svg";
 import archiveIcon from "@/assets/archiv.svg";
 import uploadIcon from "@/assets/hochladen.svg";
-import { useLocation, useHistory } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import useAuth from "@/auth/useAuth.js";
 
 export default function Header() {
   const location = useLocation();
-  const history = useHistory();
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
 
   const src = location.pathname === "/upload" ? archiveIcon : uploadIcon;
@@ -20,7 +20,7 @@ export default function Header() {
       {user !== null && (
         <button
           className="flex items-center justify-center justify-self-start sm p-2 pl-2 cursor-pointer"
-          onClick={() => history.push(targetPath)}
+          onClick={() => navigate(targetPath)}
         >
           <div className="w-10 h-10">
             <img src={src} alt={alt} />

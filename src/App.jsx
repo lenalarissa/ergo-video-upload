@@ -1,128 +1,121 @@
-import { useCallback, useState } from "react";
-import Header from "@/components/layout/Header.jsx";
-import SignIn from "@/components/sign-in/SignIn.jsx";
-import Footer from "@/components/layout/Footer.jsx";
-import MainContent from "@/components/layout/MainContent.jsx";
-import { Redirect, Route, Switch } from "react-router-dom";
-import VideoTable from "@/components/video-table/VideoTable.jsx";
-import useAuth from "@/auth/useAuth.js";
+import { useCallback, useState } from 'react'
+import Header from '@/components/layout/Header.jsx'
+import SignIn from '@/components/sign-in/SignIn.jsx'
+import Footer from '@/components/layout/Footer.jsx'
+import MainContent from '@/components/layout/MainContent.jsx'
+import { Route, Routes } from 'react-router-dom'
+import VideoTable from '@/components/video-table/VideoTable.jsx'
+import useAuth from '@/auth/useAuth.js'
 
-function App() {
-  const [mailLink, setMailLink] = useState(null);
-  const { user, getAccessToken } = useAuth();
+function App () {
+  const [mailLink, setMailLink] = useState(null)
+  const { user, getAccessToken } = useAuth()
 
-  function wait(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  function wait (ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms))
   }
 
   const createMailLink = useCallback(
     async (id) => {
       try {
-        const token = await getAccessToken();
+        const token = await getAccessToken()
         if (!token) {
-          return;
+          return
         }
         const response = await fetch(
           `https://ergopro-ecloud.equeo.de/rest/v1/videos/renditions/${id}`,
           {
             headers: {
-              Authorization: "Bearer " + token,
+              Authorization: 'Bearer ' + token,
             },
           },
-        );
+        )
 
         if (!response.ok) {
-          return "";
+          return ''
         }
-        const result = await response.json();
-        const renditions = result.media_renditions;
+        const result = await response.json()
+        const renditions = result.media_renditions
 
         if (renditions.length === 0) {
-          return "";
+          return ''
         }
 
         const videoRenditions = renditions.filter((r) => {
-          return r.media_type === "video";
-        });
+          return r.media_type === 'video'
+        })
 
         if (videoRenditions.length === 0) {
-          return "";
+          return ''
         }
 
         const allVideosReady = videoRenditions.every((r) => {
           return (
-            typeof r.delivery_url === "string" && r.delivery_url.trim() !== ""
-          );
-        });
+            typeof r.delivery_url === 'string' && r.delivery_url.trim() !== ''
+          )
+        })
 
         if (!allVideosReady) {
-          return "";
+          return ''
         }
 
-        const video = videoRenditions.sort((a, b) => b.height - a.height)[0];
+        const video = videoRenditions.sort((a, b) => b.height - a.height)[0]
 
         const url = video.delivery_url.replace(
-          "cdn.jwplayer.com",
-          "cdn.equeo.de",
-        );
-        setMailLink(url);
-        return url;
+          'cdn.jwplayer.com',
+          'cdn.equeo.de',
+        )
+
+        setMailLink(url)
+        return url
       } catch (e) {
-        console.error(e);
-        return "";
+        console.error(e)
+        return ''
       }
     },
     [getAccessToken],
-  );
+  )
 
-  async function pollForMailLink(id, maxAttempts = 1000, delay = 5000) {
+  async function pollForMailLink (id, maxAttempts = 1000, delay = 5000) {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      const mailUrl = await createMailLink(id);
+      const mailUrl = await createMailLink(id)
 
-      if (mailUrl && mailUrl !== "") {
-        return mailUrl;
+      if (mailUrl && mailUrl !== '') {
+        return mailUrl
       }
-      await wait(delay);
+      await wait(delay)
     }
-    return "";
+    return ''
   }
 
   return (
     <div className="flex flex-col gap-4 min-h-screen bg-white">
-      <Header />
+      <Header/>
 
       {user !== null ? (
-        <Switch>
-          <Route exact path="/">
-            <Redirect to="/upload" />
-          </Route>
-
+        <Routes>
           <Route
             path="/upload"
-            render={() => (
-              <MainContent
-                mailLink={mailLink}
-                pollForMailLink={pollForMailLink}
-              />
-            )}
+            element={<MainContent mailLink={mailLink} pollForMailLink={pollForMailLink} />}
           />
 
           <Route
             path="/videotable"
-            render={() => <VideoTable createMailLink={createMailLink} />}
+            element={<VideoTable createMailLink={createMailLink}/>}
           />
 
-          <Route>
-            <Redirect to="/upload" />
-          </Route>
-        </Switch>
+          <Route
+            path="*"
+            element={<MainContent mailLink={mailLink} pollForMailLink={pollForMailLink} />}
+          />
+        </Routes>
       ) : (
-        <SignIn />
+        <SignIn/>
       )}
 
-      <Footer />
+      <Footer/>
     </div>
-  );
+  )
 }
 
-export default App;
+export default App

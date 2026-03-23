@@ -1,11 +1,11 @@
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { login } from "eqmod-ts-userlogin";
 import { REGISTER_CLIENT, USER_CLIENT } from "@/auth/auth.js";
 import useAuth from "@/auth/useAuth.js";
 
 export default function SignIn() {
   const { setUser } = useAuth();
-  const history = useHistory();
+  const navigate = useNavigate();
 
   async function signIn(formData) {
     const email = formData.get("email");
@@ -21,7 +21,7 @@ export default function SignIn() {
     try {
       const formData = new FormData(e.currentTarget);
       await signIn(formData);
-      history.push("/upload");
+      navigate("/upload");
     } catch (e) {
       console.error(e);
     }
