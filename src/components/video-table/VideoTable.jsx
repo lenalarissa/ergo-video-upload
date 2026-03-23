@@ -182,7 +182,7 @@ export default function VideoTable({ createMailLink }) {
             {videos.length !== 0 && (
               <div>
                 <div className="p-4 w-full">
-                  <label for="search" className="sr-only">
+                  <label htmlFor="search" className="sr-only">
                     Titel suchen
                   </label>
                   <div className="relative">
