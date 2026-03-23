@@ -1,5 +1,5 @@
 import downloadIcon from "@/assets/datei-download.svg";
-import QRCode from "react-qr-code";
+import { QRCodeSVG } from "qrcode.react";
 import { useRef } from "react";
 import handleDownloadQRCode from "@/utils/handleDownloadQRCode.js";
 
@@ -17,7 +17,7 @@ export default function QrCode({ url, videoId }) {
             }}
             className="flex items-end justify-between gap-1"
           >
-            <QRCode value={url} size={140} />
+            <QRCodeSVG value={url} size={140} />
             <button
               className="flex gap-3 text-center bg-gray-300 text-black shadow rounded-sm border border-black p-1 px-4 text-xs sm:text-sm cursor-pointer"
               type="button"

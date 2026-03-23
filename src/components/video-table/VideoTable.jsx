@@ -3,7 +3,7 @@ import copy from "copy-to-clipboard";
 import copyIcon from "@/assets/kopieren-und-einfugen.svg";
 import downloadIcon from "@/assets/datei-download.svg";
 import { useEffect, useRef, useState } from "react";
-import QRCode from "react-qr-code";
+import { QRCodeSVG } from "qrcode.react";
 import handleDownloadQRCode from "@/utils/handleDownloadQRCode.js";
 import useAuth from "@/auth/useAuth.js";
 import {
@@ -356,7 +356,7 @@ export default function VideoTable({ createMailLink }) {
                                 }}
                                 className="flex items-center justify-between gap-1"
                               >
-                                <QRCode value={qrCodeLink} size={80} />
+                                <QRCodeSVG value={qrCodeLink} size={80} />
                                 <button
                                   className="w-8 h-8 p-1 cursor-pointer"
                                   onClick={() =>

@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import QRCode from "react-qr-code";
+import { QRCodeSVG } from "qrcode.react";
 import copyIcon from "@/assets/kopieren-und-einfugen.svg";
 import downloadIcon from "@/assets/datei-download.svg";
 import copy from "copy-to-clipboard";
@@ -145,7 +145,7 @@ export default function VideoCard({
                 }}
                 className="flex items-center justify-between gap-3"
               >
-                <QRCode value={qrCodeLink} size={80} />
+                <QRCodeSVG value={qrCodeLink} size={80} />
                 <button
                   className="w-6 h-6 p-1 cursor-pointer"
                   onClick={() => handleDownloadQRCode(video.id)}
