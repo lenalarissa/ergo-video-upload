@@ -1,7 +1,7 @@
 {
-  "name": "ergio-video-upload",
+  "name": "ergoapp-react-video-upload",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,41 +10,31 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
     "copy-to-clipboard": "^3.3.3",
-    "cors": "^2.8.6",
     "eqmod-ts-userlogin": "^1.1.1",
-    "express": "^5.2.1",
-    "lucide-react": "^0.563.0",
-    "multer": "^2.0.2",
-    "qr-image": "^3.2.0",
-    "radix-ui": "^1.4.3",
-    "react": "16.14.0",
-    "react-dom": "16.14.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
     "react-qr-code": "^2.0.18",
-    "react-router-dom": "5.3.4",
-    "react-toastify": "9.1.3",
-    "tailwind-merge": "^3.4.0"
+    "react-router-dom": "7.13.1"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.1",
-    "@tailwindcss/vite": "^4.2.1",
-    "@types/react": "16.14.62",
-    "@types/react-dom": "16.9.25",
-    "@vitejs/plugin-react": "^5.1.1",
-    "eslint": "^9.39.1",
+    "@eslint/js": "^9.39.4",
+    "@tailwindcss/vite": "^4.2.2",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
-    "eslint-plugin-react-refresh": "^0.4.24",
-    "globals": "^16.5.0",
-    "shadcn": "^3.8.4",
-    "tailwindcss": "^4.2.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.4.0",
+    "shadcn": "^4.1.0",
+    "tailwindcss": "^4.2.2",
     "tw-animate-css": "^1.4.0",
-    "vite": "^7.3.1"
+    "vite": "^8.0.1"
   },
   "description": "This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.",
   "main": "eslint.config.js",
   "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "author": "lena.heisel@equeo.de",
+  "license": "EQUEO"
 }
