@@ -51,10 +51,6 @@ export default function VideoCard({
       </button>
       {open && (
         <div className="flex flex-col gap-2 px-4 pb-4 space-y-2 text-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-gray-500">Status</span>
-            {video.status}
-          </div>
           <div className="flex items-center justify-between gap-3">
             <span className="text-gray-500">Länge</span>
             {convertDuration(video.duration)}
